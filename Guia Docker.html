@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guia Docker: comandos, Compose e solução de problemas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAF0F4; --surface:#FFFFFF; --ink:#0F2230; --muted:#4F6676; --line:#CBD8E1;
+  --accent:#F2B705; --blue:#0A5FB4; --rust:#B5432A; --teal:#1E5A55;
+  --code:#0A1620; --codeink:#DCEBF3; --codemuted:#7FA3B8; --warnbg:#FFF6D6; --problembg:#FBEDE9;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1820; --surface:#13232E; --ink:#E6EEF3; --muted:#93A9B8; --line:#25404F;
+    --blue:#6DB3F2; --rust:#F0866B; --code:#050D14; --warnbg:#2C2710; --problembg:#2B1A16;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1820; --surface:#13232E; --ink:#E6EEF3; --muted:#93A9B8; --line:#25404F;
+  --blue:#6DB3F2; --rust:#F0866B; --code:#050D14; --warnbg:#2C2710; --problembg:#2B1A16;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px);scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.6}
+[hidden]{display:none!important}
+
+/* Cabeçalho: chapa ondulada de container */
+.hero{
+  background:
+    repeating-linear-gradient(90deg,rgba(0,0,0,.20) 0 3px,transparent 3px 14px),
+    var(--teal);
+  border-bottom:8px solid var(--accent);
+  color:#F4F8F6;
+}
+.hero-in{max-width:1080px;margin:0 auto;padding:40px 20px 32px}
+.hero h1{font-family:"Big Shoulders Stencil Display","Arial Narrow",Impact,sans-serif;font-weight:800;font-size:clamp(44px,9vw,84px);line-height:.95;margin:0 0 12px;letter-spacing:.02em;color:var(--accent)}
+.hero p{margin:0 0 20px;max-width:56ch;font-size:17px;color:#E3EEEA}
+.search{width:100%;max-width:520px;font:inherit;font-size:16px;padding:12px 14px;border-radius:8px;border:2px solid transparent;background:#F4F8F6;color:#0F2230}
+.search:focus{outline:none;border-color:var(--accent)}
+.search::placeholder{color:#5B7280}
+
+.wrap{display:grid;grid-template-columns:220px minmax(0,1fr);gap:36px;max-width:1080px;margin:0 auto;padding:28px 20px 72px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start;display:flex;flex-direction:column;gap:2px}
+nav.toc a{color:var(--muted);text-decoration:none;padding:6px 10px;border-left:3px solid var(--line);font-size:15px}
+nav.toc a:hover{color:var(--ink)}
+nav.toc a.on{color:var(--ink);border-left-color:var(--accent);font-weight:600}
+nav.toc a:focus-visible,summary:focus-visible,.copy:focus-visible,.search:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+main{min-width:0}
+section{margin:0 0 56px}
+h2{font-size:28px;line-height:1.2;margin:0 0 8px;font-weight:600}
+h3{font-size:18px;margin:28px 0 8px;font-weight:600}
+p{margin:0 0 12px}
+.lead{color:var(--muted);max-width:64ch}
+code.i,p code,li code,td code,dd code{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+
+/* Blocos de comando */
+.cmd{margin:0 0 16px}
+.cmd p{margin:6px 2px 0;font-size:15px;color:var(--muted)}
+pre{position:relative;margin:0;background:var(--code);color:var(--codeink);border-radius:8px;padding:12px 76px 12px 14px;overflow-x:auto;font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;line-height:1.55;tab-size:2}
+pre code{font:inherit;white-space:pre}
+pre .c{color:var(--codemuted)}
+.copy{position:absolute;top:8px;right:8px;font:inherit;font-size:12px;padding:3px 9px;border-radius:5px;border:1px solid #2B4657;background:#132A38;color:#BFD6E3;cursor:pointer}
+.copy:hover{background:#1B3A4D}
+.copy.ok{background:var(--accent);color:#1a1400;border-color:var(--accent)}
+
+/* Conceitos */
+.concepts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:16px 0}
+.concept{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.concept b{display:block;margin-bottom:2px}
+.concept span{color:var(--muted);font-size:15px}
+
+/* Avisos */
+.warn,.tip{border-left:4px solid var(--accent);background:var(--warnbg);padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0;font-size:15px}
+.tip{border-left-color:var(--blue);background:var(--surface);border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.warn p:last-child,.tip p:last-child{margin-bottom:0}
+
+/* Tabelas */
+.tw{overflow-x:auto;margin:12px 0 16px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:460px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+th{font-weight:600;background:color-mix(in srgb,var(--line) 35%,transparent)}
+
+/* Problemas */
+details.problem{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--rust);border-radius:8px;margin:0 0 10px}
+details.problem summary{cursor:pointer;padding:12px 14px;font-weight:500;list-style-position:inside}
+details.problem[open] summary{border-bottom:1px solid var(--line);background:var(--problembg)}
+.pb{padding:12px 14px 4px}
+.pb pre{margin:0 0 12px}
+.pb ul{margin:0 0 12px;padding-left:20px}
+
+.empty{padding:32px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:8px}
+footer{max-width:1080px;margin:0 auto;padding:0 20px 32px;color:var(--muted);font-size:14px}
+
+@media (max-width:820px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:16px;padding-top:16px}
+  nav.toc{flex-direction:row;overflow-x:auto;gap:6px;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:8px 0;margin:0 -20px;padding-left:20px;padding-right:20px;scrollbar-width:none}
+  nav.toc::-webkit-scrollbar{display:none}
+  nav.toc a{white-space:nowrap;border-left:none;border-bottom:3px solid var(--line);padding:4px 8px}
+  nav.toc a.on{border-bottom-color:var(--accent)}
+  html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 56px)}
+  h2{font-size:24px}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-in">
+    <h1>Guia Docker</h1>
+    <p>Comandos do dia a dia, o que cada um faz e como sair dos problemas mais comuns. Toque em qualquer bloco de código para copiar.</p>
+    <input id="q" class="search" type="search" placeholder="Buscar comando ou erro (ex.: porta, volume, permission denied)" aria-label="Buscar no guia" autocomplete="off">
+  </div>
+</header>
+
+<div class="wrap">
+<nav class="toc" aria-label="Seções">
+  <a href="#conceitos">Conceitos</a>
+  <a href="#primeiros-passos">Primeiros passos</a>
+  <a href="#imagens">Imagens</a>
+  <a href="#containers">Containers</a>
+  <a href="#volumes">Volumes</a>
+  <a href="#redes">Redes</a>
+  <a href="#dockerfile">Dockerfile</a>
+  <a href="#compose">Compose</a>
+  <a href="#limpeza">Limpeza</a>
+  <a href="#problemas">Problemas comuns</a>
+  <a href="#boas-praticas">Boas práticas</a>
+</nav>
+
+<main>
+
+<section id="conceitos">
+  <h2>Conceitos em um minuto</h2>
+  <p class="lead">Se você guardar só uma ideia: <b>container é descartável, dados importantes ficam em volume</b>. O resto deriva disso.</p>
+  <div class="concepts">
+    <div class="concept"><b>Imagem</b><span>Pacote pronto e somente leitura (sistema + app + dependências). Ex.: <code>nginx:1.27</code>.</span></div>
+    <div class="concept"><b>Container</b><span>Uma imagem em execução. Você cria, para, apaga e recria quantos quiser.</span></div>
+    <div class="concept"><b>Volume</b><span>Pasta que vive fora do container. Sobrevive quando o container é apagado.</span></div>
+    <div class="concept"><b>Rede</b><span>Como containers conversam entre si e com o mundo. Em rede própria, um acha o outro pelo nome.</span></div>
+    <div class="concept"><b>Registry</b><span>Repositório de imagens. O padrão é o Docker Hub (<code>docker pull</code> baixa de lá).</span></div>
+    <div class="concept"><b>Compose</b><span>Um arquivo YAML que descreve vários containers, volumes e redes e sobe tudo com um comando.</span></div>
+  </div>
+  <p>Analogia rápida: imagem é a receita do bolo, container é o bolo pronto, volume é a geladeira onde você guarda o que não pode se perder.</p>
+</section>
+
+<section id="primeiros-passos">
+  <h2>Primeiros passos (Ubuntu)</h2>
+  <p class="lead">Instalação oficial: <code>docs.docker.com/engine/install/ubuntu</code>. Depois, confira se está tudo certo:</p>
+
+  <div class="cmd"><pre>docker --version
+docker compose version</pre><p>Mostra as versões. O Compose moderno é <code>docker compose</code> (com espaço), não <code>docker-compose</code>.</p></div>
+  <div class="cmd"><pre>docker run hello-world</pre><p>Teste completo: baixa uma imagem minúscula, cria um container e imprime uma mensagem de sucesso.</p></div>
+  <div class="cmd"><pre>sudo usermod -aG docker $USER
+newgrp docker</pre><p>Permite usar <code>docker</code> sem <code>sudo</code>. O <code>newgrp</code> vale para o terminal atual; nas demais sessões, saia e entre de novo.</p></div>
+  <div class="cmd"><pre>sudo systemctl enable --now docker
+sudo systemctl status docker</pre><p>Liga o serviço agora e em todo boot, e mostra o estado dele.</p></div>
+  <div class="cmd"><pre>docker info</pre><p>Resumo do daemon: quantos containers/imagens, driver de armazenamento, pasta de dados (<code>Docker Root Dir</code>).</p></div>
+  <div class="cmd"><pre>docker --help
+docker container --help
+docker run --help</pre><p>A ajuda embutida é boa e mostra todas as flags. Use sempre que esquecer algo.</p></div>
+</section>
+
+<section id="imagens">
+  <h2>Imagens</h2>
+  <div class="cmd"><pre>docker pull nginx:1.27</pre><p>Baixa uma imagem. Depois dos dois-pontos vem a <b>tag</b> (versão). Sem tag, vira <code>latest</code>.</p></div>
+  <div class="cmd"><pre>docker images
+docker image ls</pre><p>Lista as imagens locais, com tamanho e data.</p></div>
+  <div class="cmd"><pre>docker search redis</pre><p>Procura no Docker Hub. Prefira imagens marcadas como <em>Official</em>.</p></div>
+  <div class="cmd"><pre>docker build -t meuapp:1.0 .</pre><p>Constrói uma imagem a partir do <code>Dockerfile</code> da pasta atual (o <code>.</code> no final é o contexto).</p></div>
+  <div class="cmd"><pre>docker build --no-cache -t meuapp:1.0 .</pre><p>Ignora o cache e refaz todas as etapas. Use quando algo "não atualiza".</p></div>
+  <div class="cmd"><pre>docker tag meuapp:1.0 meuusuario/meuapp:1.0</pre><p>Dá outro nome à mesma imagem (necessário antes de enviar ao Docker Hub).</p></div>
+  <div class="cmd"><pre>docker login
+docker push meuusuario/meuapp:1.0</pre><p>Entra no registry e envia a imagem.</p></div>
+  <div class="cmd"><pre>docker rmi nginx:1.27</pre><p>Remove uma imagem (falha se algum container ainda a usa).</p></div>
+  <div class="cmd"><pre>docker history meuapp:1.0
+docker inspect meuapp:1.0</pre><p><code>history</code> mostra as camadas e o tamanho de cada uma. <code>inspect</code> despeja todos os metadados em JSON.</p></div>
+  <div class="cmd"><pre>docker save -o meuapp.tar meuapp:1.0
+docker load -i meuapp.tar</pre><p>Exporta/importa uma imagem como arquivo. Útil para levar para uma máquina sem internet.</p></div>
+</section>
+
+<section id="containers">
+  <h2>Containers</h2>
+  <h3>Criar e rodar</h3>
+  <div class="cmd"><pre>docker run -d --name web -p 8080:80 nginx:1.27</pre><p>O comando mais importante. Sobe o Nginx em segundo plano, com nome <code>web</code>, e acessível em <code>http://localhost:8080</code>.</p></div>
+
+  <div class="tw"><table>
+    <tr><th>Flag</th><th>O que faz</th></tr>
+    <tr><td><code>-d</code></td><td>Roda em segundo plano (detached). Sem ela, o terminal fica preso ao container.</td></tr>
+    <tr><td><code>--name x</code></td><td>Nome fácil em vez do aleatório. Precisa ser único.</td></tr>
+    <tr><td><code>-p 8080:80</code></td><td>Porta <b>host:container</b>. A da esquerda é a do seu PC, a da direita é a do app dentro.</td></tr>
+    <tr><td><code>-v dados:/pasta</code></td><td>Monta volume ou pasta. Veja a seção Volumes.</td></tr>
+    <tr><td><code>-e VAR=valor</code></td><td>Define variável de ambiente. Também existe <code>--env-file .env</code>.</td></tr>
+    <tr><td><code>--rm</code></td><td>Apaga o container quando ele termina. Ótimo para testes.</td></tr>
+    <tr><td><code>-it</code></td><td>Modo interativo com terminal (para entrar em um shell).</td></tr>
+    <tr><td><code>--restart unless-stopped</code></td><td>Volta sozinho após falha ou reboot, a menos que você o tenha parado.</td></tr>
+    <tr><td><code>--network rede</code></td><td>Conecta a uma rede específica.</td></tr>
+    <tr><td><code>-u $(id -u):$(id -g)</code></td><td>Roda com o seu usuário (evita arquivos criados como root).</td></tr>
+  </table></div>
+
+  <div class="cmd"><pre>docker run --rm -it ubuntu:24.04 bash</pre><p>Abre um Ubuntu descartável para testar comandos. Ao sair (<code>exit</code>), tudo é apagado.</p></div>
+
+  <h3>Ver o que está acontecendo</h3>
+  <div class="cmd"><pre>docker ps
+docker ps -a</pre><p><code>ps</code> mostra os que estão rodando; <code>-a</code> inclui os parados e os que falharam.</p></div>
+  <div class="cmd"><pre>docker logs -f --tail 100 web
+docker logs --since 10m web</pre><p>Saída do container. <code>-f</code> acompanha em tempo real, <code>--tail</code> limita as últimas linhas, <code>--since</code> filtra por tempo.</p></div>
+  <div class="cmd"><pre>docker stats
+docker top web</pre><p><code>stats</code> mostra CPU, memória e rede ao vivo. <code>top</code> lista os processos dentro do container.</p></div>
+  <div class="cmd"><pre>docker inspect web
+docker inspect -f '{{.State.ExitCode}}' web
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' web</pre><p>Detalhes completos em JSON. Com <code>-f</code> você extrai só um campo (código de saída, IP, etc.).</p></div>
+  <div class="cmd"><pre>docker port web</pre><p>Mostra o mapeamento de portas do container.</p></div>
+
+  <h3>Interagir</h3>
+  <div class="cmd"><pre>docker exec -it web bash
+docker exec -it web sh</pre><p>Abre um terminal dentro de um container que já está rodando. Imagens enxutas (alpine) só têm <code>sh</code>.</p></div>
+  <div class="cmd"><pre>docker exec web nginx -t</pre><p>Executa um comando pontual sem abrir shell.</p></div>
+  <div class="cmd"><pre>docker cp web:/etc/nginx/nginx.conf ./nginx.conf
+docker cp ./index.html web:/usr/share/nginx/html/</pre><p>Copia arquivos entre o container e o seu PC, nos dois sentidos.</p></div>
+
+  <h3>Ciclo de vida</h3>
+  <div class="cmd"><pre>docker stop web      # pede para parar com educação (SIGTERM)
+docker start web     # liga de novo
+docker restart web
+docker kill web      # mata na hora (SIGKILL)</pre><p>Parar não apaga nada: o container continua existindo, só desligado.</p></div>
+  <div class="cmd"><pre>docker rm web
+docker rm -f web     # para e remove de uma vez</pre><p>Remove o container. Dados que estavam só dentro dele são perdidos; volumes permanecem.</p></div>
+  <div class="cmd"><pre>docker rename web site</pre><p>Renomeia um container existente.</p></div>
+  <div class="cmd"><pre>docker update --restart unless-stopped web</pre><p>Muda a política de reinício de um container que já existe.</p></div>
+</section>
+
+<section id="volumes">
+  <h2>Volumes e persistência</h2>
+  <p class="lead">Tudo que o container grava dentro dele some quando ele é removido. Para guardar dados, use um destes dois modos:</p>
+  <div class="tw"><table>
+    <tr><th>Tipo</th><th>Como escrever</th><th>Quando usar</th></tr>
+    <tr><td><b>Volume nomeado</b></td><td><code>-v dados:/var/lib/app</code></td><td>Bancos de dados e dados do app. O Docker gerencia o local (<code>/var/lib/docker/volumes</code>).</td></tr>
+    <tr><td><b>Bind mount</b></td><td><code>-v $(pwd)/site:/usr/share/nginx/html</code></td><td>Você quer editar arquivos do seu PC e ver o efeito no container (código, configs).</td></tr>
+  </table></div>
+
+  <div class="cmd"><pre>docker run -d --name db -v dados:/var/lib/postgresql/data -e POSTGRES_PASSWORD=troque postgres:16</pre><p>Volume nomeado: se você apagar e recriar o container <code>db</code> com o mesmo <code>-v</code>, os dados continuam lá.</p></div>
+  <div class="cmd"><pre>docker run -d -p 8080:80 -v $(pwd)/site:/usr/share/nginx/html:ro nginx:1.27</pre><p>Bind mount. O <code>:ro</code> deixa somente leitura dentro do container, mais seguro para configs e sites estáticos.</p></div>
+  <div class="cmd"><pre>docker volume ls
+docker volume inspect dados
+docker volume create dados
+docker volume rm dados</pre><p>Gerenciar volumes. <code>inspect</code> mostra onde ele está no disco.</p></div>
+  <div class="cmd"><pre>docker run --rm -v dados:/data -v $(pwd):/backup alpine tar czf /backup/dados.tar.gz -C /data .</pre><p><b>Backup de um volume</b>: um container temporário compacta o conteúdo para a sua pasta atual.</p></div>
+  <div class="cmd"><pre>docker run --rm -v dados:/data -v $(pwd):/backup alpine tar xzf /backup/dados.tar.gz -C /data</pre><p><b>Restaurar</b> o backup acima em um volume.</p></div>
+  <div class="tip"><p><b>Dica com arquivos únicos (SQLite, por exemplo):</b> monte a <em>pasta</em> que contém o arquivo, não o arquivo em si. Alguns editores recriam o arquivo ao salvar e o bind mount de arquivo único passa a apontar para o antigo.</p></div>
+</section>
+
+<section id="redes">
+  <h2>Redes</h2>
+  <p class="lead">Na rede padrão (<code>bridge</code>) os containers só se acham por IP. Em uma <b>rede criada por você</b>, eles se acham pelo <b>nome do container</b>.</p>
+  <div class="cmd"><pre>docker network create minharede
+docker run -d --name db --network minharede postgres:16
+docker run -d --name app --network minharede -p 8000:8000 meuapp:1.0</pre><p>Dentro do <code>app</code>, o banco é acessado em <code>db:5432</code>. Não precisa de IP nem de <code>-p</code> para a comunicação interna.</p></div>
+  <div class="cmd"><pre>docker network ls
+docker network inspect minharede
+docker network connect minharede web
+docker network disconnect minharede web</pre><p>Listar, inspecionar (mostra quem está conectado e os IPs) e mover containers entre redes.</p></div>
+  <div class="cmd"><pre>docker run --rm -it --network host alpine sh</pre><p><code>--network host</code> usa a rede do próprio host, sem isolamento e sem <code>-p</code>. Só em Linux; útil para diagnóstico.</p></div>
+  <div class="cmd"><pre>docker run --add-host=host.docker.internal:host-gateway ...</pre><p>No Linux, é assim que o container enxerga serviços rodando na máquina host (usando o nome <code>host.docker.internal</code>).</p></div>
+  <div class="tip"><p><b>Lembrete:</b> <code>-p</code> é para acessar de <em>fora</em> (seu navegador, outra máquina). Entre containers da mesma rede, use o nome e a porta interna.</p></div>
+</section>
+
+<section id="dockerfile">
+  <h2>Dockerfile</h2>
+  <p class="lead">Receita para montar a sua própria imagem. Exemplo típico para um script Python:</p>
+  <div class="cmd"><pre>FROM python:3.12-slim
+WORKDIR /app
+
+# dependências primeiro (aproveita o cache)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# depois o código
+COPY . .
+
+ENV TZ=America/Sao_Paulo
+CMD ["python", "main.py"]</pre><p>Salve como <code>Dockerfile</code> e rode <code>docker build -t meuapp:1.0 .</code>. Depois: <code>docker run -d --name meuapp meuapp:1.0</code>.</p></div>
+
+  <div class="tw"><table>
+    <tr><th>Instrução</th><th>Função</th></tr>
+    <tr><td><code>FROM</code></td><td>Imagem base. Prefira tags <code>-slim</code> ou <code>-alpine</code> e fixe a versão.</td></tr>
+    <tr><td><code>WORKDIR</code></td><td>Pasta de trabalho dentro da imagem (é criada se não existir).</td></tr>
+    <tr><td><code>COPY</code></td><td>Copia arquivos do seu PC para a imagem.</td></tr>
+    <tr><td><code>RUN</code></td><td>Executa um comando <em>durante o build</em> (instalar pacotes, por exemplo).</td></tr>
+    <tr><td><code>ENV</code></td><td>Variável de ambiente que fica na imagem.</td></tr>
+    <tr><td><code>EXPOSE</code></td><td>Apenas documenta a porta do app. Não publica nada; quem publica é o <code>-p</code>.</td></tr>
+    <tr><td><code>CMD</code></td><td>Comando padrão ao iniciar o container (pode ser sobrescrito no <code>docker run</code>).</td></tr>
+    <tr><td><code>ENTRYPOINT</code></td><td>Comando fixo; o que vier no <code>docker run</code> vira argumento dele.</td></tr>
+  </table></div>
+
+  <div class="cmd"><pre>__pycache__/
+*.pyc
+.git
+.env
+venv/
+node_modules/</pre><p>Arquivo <code>.dockerignore</code>: o que não deve ir para o build. Deixa o build mais rápido e evita vazar segredos na imagem.</p></div>
+  <div class="tip"><p><b>Ordem importa para o cache.</b> Cada linha vira uma camada. Coloque primeiro o que muda pouco (dependências) e por último o que muda sempre (seu código). Assim o rebuild leva segundos.</p></div>
+</section>
+
+<section id="compose">
+  <h2>Docker Compose</h2>
+  <p class="lead">Em vez de decorar vários <code>docker run</code> longos, descreva tudo em um <code>compose.yaml</code> e use um comando. Exemplo com Nginx servindo uma pasta e um app com volume:</p>
+  <div class="cmd"><pre>services:
+  web:
+    image: nginx:1.27
+    ports:
+      - "8080:80"
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      - TZ=America/Sao_Paulo
+    volumes:
+      - dados:/app/data
+    restart: unless-stopped
+
+volumes:
+  dados:</pre><p>Cada item em <code>services</code> vira um container. Todos entram numa rede comum automaticamente, então <code>web</code> acessa <code>app</code> pelo nome (<code>http://app:8000</code>). A linha <code>version:</code> não é mais necessária.</p></div>
+
+  <div class="cmd"><pre>docker compose up -d</pre><p>Cria e inicia tudo em segundo plano.</p></div>
+  <div class="cmd"><pre>docker compose up -d --build</pre><p>Reconstrói as imagens (as com <code>build:</code>) antes de subir. Use depois de mexer no código ou no Dockerfile.</p></div>
+  <div class="cmd"><pre>docker compose ps
+docker compose logs -f app</pre><p>Estado dos serviços e logs de um deles (sem o nome, mostra todos).</p></div>
+  <div class="cmd"><pre>docker compose exec app sh
+docker compose run --rm app python teste.py</pre><p><code>exec</code> entra em um serviço que está rodando. <code>run --rm</code> cria um container novo só para um comando.</p></div>
+  <div class="cmd"><pre>docker compose restart app
+docker compose stop
+docker compose start</pre><p>Reinicia um serviço, ou para/liga tudo sem remover.</p></div>
+  <div class="cmd"><pre>docker compose pull
+docker compose up -d</pre><p>Baixa versões novas das imagens e recria só o que mudou.</p></div>
+  <div class="cmd"><pre>docker compose config</pre><p>Valida o YAML e mostra o resultado final com variáveis resolvidas. Ótimo para achar erro de indentação.</p></div>
+  <div class="cmd"><pre>docker compose down</pre><p>Para e remove containers e redes. <b>Os volumes ficam.</b></p></div>
+  <div class="warn"><p><b>Cuidado:</b> <code>docker compose down -v</code> também apaga os volumes, ou seja, os dados. Só use quando quiser zerar tudo.</p></div>
+</section>
+
+<section id="limpeza">
+  <h2>Limpeza e espaço em disco</h2>
+  <p class="lead">Com o tempo, imagens antigas, containers parados e cache de build ocupam muito disco.</p>
+  <div class="cmd"><pre>docker system df</pre><p>Mostra quanto espaço cada categoria usa e quanto é "recuperável".</p></div>
+  <div class="cmd"><pre>docker container prune      # remove containers parados
+docker image prune          # remove imagens sem tag (dangling)
+docker image prune -a       # remove todas as imagens sem uso
+docker builder prune        # limpa o cache de build</pre><p>Limpezas seletivas. Cada uma pede confirmação.</p></div>
+  <div class="cmd"><pre>docker system prune -a</pre><p>Limpa containers parados, redes sem uso, imagens sem uso e cache. Não mexe em volumes.</p></div>
+  <div class="warn"><p><b>Cuidado com volumes:</b> <code>docker volume prune</code> e <code>docker system prune --volumes</code> apagam volumes que nenhum container esteja usando <em>naquele momento</em>. Se o container do banco estiver parado, o volume dele entra na lista. Rode <code>docker volume ls</code> antes.</p></div>
+</section>
+
+<section id="problemas">
+  <h2>Problemas comuns e como resolver</h2>
+  <p class="lead">Clique no sintoma para abrir a causa e a solução. A busca lá em cima também procura aqui.</p>
+
+  <h3>Como investigar (roteiro geral)</h3>
+  <div class="cmd"><pre>docker ps -a                                # o container existe? está Up ou Exited?
+docker logs --tail 100 NOME                 # o que ele disse antes de cair?
+docker inspect -f '{{.State.ExitCode}}' NOME  # com qual código saiu?
+docker exec -it NOME sh                     # entrar e olhar por dentro
+docker events                               # eventos do daemon em tempo real</pre><p>Nessa ordem, resolve a maioria dos casos. Quase sempre a resposta está em <code>docker logs</code>.</p></div>
+
+  <details class="problem">
+    <summary>permission denied while trying to connect to the Docker daemon socket</summary>
+    <div class="pb">
+      <p><b>Causa:</b> seu usuário não está no grupo <code>docker</code>.</p>
+      <pre>sudo usermod -aG docker $USER
+newgrp docker      # ou saia e entre de novo na sessão
+docker ps          # testar</pre>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Cannot connect to the Docker daemon. Is the docker daemon running?</summary>
+    <div class="pb">
+      <p><b>Causa:</b> o serviço do Docker está parado.</p>
+      <pre>sudo systemctl start docker
+sudo systemctl enable docker
+sudo journalctl -u docker -n 50 --no-pager   # se não subir, veja o motivo aqui</pre>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>port is already allocated / address already in use</summary>
+    <div class="pb">
+      <p><b>Causa:</b> a porta do host já está em uso por outro container ou por outro programa.</p>
+      <pre>docker ps --format "table {{.Names}}\t{{.Ports}}"   # algum container já usa?
+sudo ss -tulpn | grep :8080                          # ou algum processo do sistema?</pre>
+      <p><b>Solução:</b> pare quem está usando, ou mude o lado esquerdo do <code>-p</code> (ex.: <code>-p 8081:80</code>). A porta de dentro do container não muda.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>The container name "/x" is already in use</summary>
+    <div class="pb">
+      <p><b>Causa:</b> já existe um container (talvez parado) com esse nome.</p>
+      <pre>docker rm -f x
+# depois rode o docker run de novo</pre>
+      <p>Para testes, use <code>--rm</code> e isso não acontece mais.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>O container sobe e cai na hora (status Exited)</summary>
+    <div class="pb">
+      <p><b>Causa:</b> o processo principal terminou ou deu erro. Um container só vive enquanto o processo principal roda em <em>primeiro plano</em>.</p>
+      <pre>docker logs NOME
+docker inspect -f '{{.State.ExitCode}}' NOME</pre>
+      <ul>
+        <li><code>0</code>: o programa terminou normalmente (era um script que acabou, ou o serviço foi para segundo plano).</li>
+        <li><code>1</code>: erro na própria aplicação, veja os logs.</li>
+        <li><code>125 / 126 / 127</code>: erro do Docker, comando sem permissão de execução ou comando não encontrado (confira o <code>CMD</code>).</li>
+        <li><code>137</code>: morto à força, geralmente falta de memória (OOM) ou <code>docker kill</code>.</li>
+        <li><code>139</code>: falha de segmentação no programa.</li>
+      </ul>
+      <p>Para investigar por dentro, troque o comando por um shell:</p>
+      <pre>docker run --rm -it --entrypoint sh IMAGEM</pre>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>O container está rodando mas não abre no navegador</summary>
+    <div class="pb">
+      <p><b>Checklist:</b></p>
+      <ul>
+        <li>O <code>-p</code> está certo? <code>docker port NOME</code> mostra o mapeamento.</li>
+        <li>O app dentro do container escuta em <code>0.0.0.0</code>? Se escutar só em <code>127.0.0.1</code>, nada de fora chega. Em Flask, por exemplo, use <code>host="0.0.0.0"</code>.</li>
+        <li>A porta do lado direito do <code>-p</code> é a mesma que o app usa?</li>
+        <li>Teste de dentro: <code>docker exec NOME curl -s localhost:PORTA</code>. Funciona lá dentro e não fora? Então é bind/porta/firewall.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Firewall (ufw) liberado só para algumas portas, mas o container aparece para todo mundo</summary>
+    <div class="pb">
+      <p><b>Causa:</b> o Docker escreve direto no iptables e ignora as regras do <code>ufw</code> para portas publicadas com <code>-p</code>.</p>
+      <p><b>Solução:</b> publique só no localhost quando não quiser expor na rede:</p>
+      <pre>docker run -d -p 127.0.0.1:8080:80 nginx:1.27
+# no compose:  - "127.0.0.1:8080:80"</pre>
+      <p>Aí um proxy (como o Nginx do host) decide o que fica público.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>no space left on device</summary>
+    <div class="pb">
+      <p><b>Causa:</b> imagens, cache de build, volumes ou logs encheram o disco.</p>
+      <pre>docker system df
+sudo du -sh /var/lib/docker/containers/*/*-json.log | sort -h | tail   # logs gigantes?
+docker system prune -a      # limpa sem uso (não mexe em volumes)</pre>
+      <p>Se os logs forem o problema, veja o item abaixo para limitá-los.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Logs dos containers crescendo sem parar</summary>
+    <div class="pb">
+      <p><b>Causa:</b> por padrão o Docker não limita o tamanho do log de cada container.</p>
+      <p><b>Solução global</b> (vale para containers <em>novos</em>; os existentes precisam ser recriados):</p>
+      <pre>sudo nano /etc/docker/daemon.json
+
+{
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "10m", "max-file": "3" }
+}
+
+sudo systemctl restart docker</pre>
+      <p><b>Só em um serviço do Compose:</b></p>
+      <pre>    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"</pre>
+      <p>Se já houver um <code>daemon.json</code>, una as chaves no mesmo arquivo (é um único JSON válido). Reiniciar o Docker derruba containers que não tenham <code>restart</code> configurado.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Alterei o código, mas o container continua com a versão antiga</summary>
+    <div class="pb">
+      <p><b>Causa:</b> a imagem não foi reconstruída, ou o container antigo continua rodando.</p>
+      <pre>docker compose up -d --build           # Compose
+docker build --no-cache -t meuapp:1.0 .  # sem Compose, ignorando cache
+docker rm -f meuapp
+docker run -d --name meuapp meuapp:1.0   # recria o container com a imagem nova</pre>
+      <p>Para imagens do Docker Hub com tag <code>latest</code>, use antes <code>docker pull</code> ou <code>docker compose pull</code>. Durante o desenvolvimento, um bind mount da pasta do código evita rebuild a cada mudança.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Meus dados sumiram depois de recriar o container</summary>
+    <div class="pb">
+      <p><b>Causa:</b> os dados estavam dentro do container, sem volume. Ou você usou <code>docker compose down -v</code> / <code>docker volume prune</code>.</p>
+      <p><b>Prevenção:</b> monte um volume na pasta onde o app grava (banco, uploads, arquivos <code>.db</code>). Confira o caminho na documentação da imagem, por exemplo <code>/var/lib/postgresql/data</code> no Postgres. Faça backup periódico com o comando da seção Volumes.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Arquivos criados pelo container ficam como root no meu PC (permission denied ao editar/apagar)</summary>
+    <div class="pb">
+      <p><b>Causa:</b> por padrão o processo roda como root dentro do container, e os arquivos do bind mount herdam esse dono.</p>
+      <pre>docker run --user $(id -u):$(id -g) -v $(pwd):/app ...   # roda com o seu usuário
+sudo chown -R $USER:$USER pasta/                         # corrige o que já foi criado</pre>
+      <p>No Compose: <code>user: "1000:1000"</code> no serviço (ajuste para o seu <code>id -u</code>).</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Container sem internet ou sem resolver nomes (DNS)</summary>
+    <div class="pb">
+      <p><b>Teste:</b></p>
+      <pre>docker run --rm alpine ping -c 2 8.8.8.8      # testa a saída pela rede
+docker run --rm alpine nslookup google.com    # testa DNS</pre>
+      <p>Se o ping funciona e o DNS não, force um DNS no <code>/etc/docker/daemon.json</code> (por exemplo o do seu servidor interno) e reinicie o Docker:</p>
+      <pre>{ "dns": ["8.8.8.8", "1.1.1.1"] }</pre>
+      <p>Se nem o ping funciona, veja se o encaminhamento de pacotes e o firewall do host estão liberados, e se há VPN interferindo.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Conflito com a rede da empresa (Docker usa 172.17.0.0/16 e some acesso a algo)</summary>
+    <div class="pb">
+      <p><b>Causa:</b> o Docker escolhe faixas privadas (172.17.x.x e outras) para as próprias redes. Se a sua rede ou VPN usa a mesma faixa, o tráfego vai para o lugar errado.</p>
+      <p><b>Solução:</b> defina outras faixas no <code>/etc/docker/daemon.json</code>:</p>
+      <pre>{
+  "bip": "10.199.0.1/24",
+  "default-address-pools": [
+    { "base": "10.200.0.0/16", "size": 24 }
+  ]
+}
+
+sudo systemctl restart docker</pre>
+      <p>Escolha uma faixa que não exista na sua rede. Redes já criadas mantêm a faixa antiga até serem recriadas (<code>docker compose down</code> e <code>up</code>).</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Horário errado dentro do container (fuso UTC)</summary>
+    <div class="pb">
+      <p><b>Causa:</b> imagens usam UTC por padrão.</p>
+      <pre>docker run -e TZ=America/Sao_Paulo ...
+# Compose:
+    environment:
+      - TZ=America/Sao_Paulo</pre>
+      <p>Em imagens muito enxutas pode ser preciso instalar o pacote <code>tzdata</code>.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Chrome/Selenium travando ou caindo dentro do container</summary>
+    <div class="pb">
+      <p><b>Causa:</b> o Chrome usa bastante <code>/dev/shm</code>, e o Docker dá só 64 MB por padrão.</p>
+      <pre>docker run --shm-size=2g ...
+# Compose:
+    shm_size: "2gb"</pre>
+      <p>Nas opções do Chrome também ajudam <code>--disable-dev-shm-usage</code> e, em container, <code>--no-sandbox</code>. Rode em modo <code>--headless=new</code> quando não precisar da tela.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>exec: "bash": executable file not found</summary>
+    <div class="pb">
+      <p><b>Causa:</b> imagens enxutas, como as baseadas em alpine, não têm bash.</p>
+      <pre>docker exec -it NOME sh</pre>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>toomanyrequests: You have reached your pull rate limit</summary>
+    <div class="pb">
+      <p><b>Causa:</b> o Docker Hub limita downloads anônimos por IP. Em rede corporativa, muita gente compartilha o mesmo IP.</p>
+      <pre>docker login</pre>
+      <p>Logado, o limite é bem maior. Em ambiente com muitas máquinas, considere um espelho local (registry cache).</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Erro de YAML no Compose (yaml: line X ... / mapping values are not allowed)</summary>
+    <div class="pb">
+      <p><b>Causa:</b> quase sempre indentação. YAML usa <b>espaços</b>, nunca tab, e a hierarquia depende da quantidade.</p>
+      <pre>docker compose config</pre>
+      <p>Esse comando aponta a linha do erro. Cuidado também com <code>:</code> em valores (coloque entre aspas) e com portas sem aspas, como <code>"8080:80"</code>.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>docker-compose: command not found (ou comportamento diferente do esperado)</summary>
+    <div class="pb">
+      <p><b>Causa:</b> o <code>docker-compose</code> (v1, com hífen) foi descontinuado. O atual é um plugin do Docker.</p>
+      <pre>docker compose version</pre>
+      <p>Se não existir, instale o pacote <code>docker-compose-plugin</code> seguindo a documentação oficial. Todos os comandos são iguais, só troque o hífen por espaço.</p>
+    </div>
+  </details>
+
+  <details class="problem">
+    <summary>Depende de outro serviço, mas o app sobe antes do banco estar pronto</summary>
+    <div class="pb">
+      <p><b>Causa:</b> <code>depends_on</code> sozinho só garante a <em>ordem de início</em>, não que o banco já esteja aceitando conexões.</p>
+      <pre>  db:
+    image: postgres:16
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy</pre>
+    </div>
+  </details>
+
+  <div class="empty" id="noresult" hidden>Nada encontrado. Tente outra palavra, como "porta", "volume", "log" ou "permission".</div>
+</section>
+
+<section id="boas-praticas">
+  <h2>Boas práticas</h2>
+  <div class="tw"><table>
+    <tr><th>Faça</th><th>Por quê</th></tr>
+    <tr><td>Fixe a versão da imagem (<code>nginx:1.27</code>) em vez de <code>latest</code></td><td>Evita que uma atualização inesperada quebre algo no próximo pull.</td></tr>
+    <tr><td>Use <code>restart: unless-stopped</code> em serviços permanentes</td><td>Volta sozinho após queda ou reboot do servidor.</td></tr>
+    <tr><td>Guarde dados em volumes e faça backup</td><td>Container é descartável, o dado não.</td></tr>
+    <tr><td>Segredos em <code>.env</code> fora do Git (e no <code>.gitignore</code> e <code>.dockerignore</code>)</td><td>Senhas não devem ficar dentro da imagem nem no repositório.</td></tr>
+    <tr><td>Um processo principal por container</td><td>Fica simples de monitorar, reiniciar e ver logs. Combine vários com Compose.</td></tr>
+    <tr><td>Use <code>--rm</code> em testes rápidos</td><td>Não deixa lixo de containers parados.</td></tr>
+    <tr><td>Limite logs (<code>max-size</code>)</td><td>Impede que um container verboso encha o disco do servidor.</td></tr>
+    <tr><td>Prefira imagens oficiais e <code>-slim</code>/<code>-alpine</code></td><td>Menores, mais rápidas para baixar e com menos superfície de ataque.</td></tr>
+    <tr><td>Não publique portas de banco na internet</td><td>Deixe o banco só na rede interna do Compose; publique apenas o que precisa.</td></tr>
+  </table></div>
+
+  <h3>Fluxo do dia a dia com Compose</h3>
+  <div class="cmd"><pre>docker compose up -d --build   # sobe / atualiza
+docker compose logs -f app     # acompanha
+docker compose exec app sh     # entra para investigar
+docker compose down            # desliga (dados preservados)</pre><p>Com esses quatro comandos você resolve a maior parte do trabalho.</p></div>
+</section>
+
+</main>
+</div>
+
+<footer>Guia rápido de Docker. Em caso de dúvida em qualquer comando, use <code>docker COMANDO --help</code>.</footer>
+
+<script>
+(function(){
+  // Destaca comentários e adiciona botão de copiar em todos os blocos de código
+  document.querySelectorAll('pre').forEach(function(pre){
+    var raw = pre.textContent;
+    pre.textContent = '';
+    var code = document.createElement('code');
+    raw.split('\n').forEach(function(line, i, arr){
+      var idx = -1;
+      if (line.trim().charAt(0) === '#') { idx = line.indexOf('#'); }
+      else { var m = line.search(/\s#\s/); if (m > -1) idx = m + 1; }
+      if (idx > -1) {
+        code.appendChild(document.createTextNode(line.slice(0, idx)));
+        var s = document.createElement('span'); s.className = 'c'; s.textContent = line.slice(idx);
+        code.appendChild(s);
+      } else {
+        code.appendChild(document.createTextNode(line));
+      }
+      if (i < arr.length - 1) code.appendChild(document.createTextNode('\n'));
+    });
+    pre.appendChild(code);
+    pre.setAttribute('data-raw', raw);
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'copy'; b.textContent = 'Copiar';
+    b.setAttribute('aria-label', 'Copiar código');
+    b.addEventListener('click', function(){ copyText(raw, b); });
+    pre.appendChild(b);
+  });
+
+  function copyText(text, btn){
+    function done(ok){
+      btn.textContent = ok ? 'Copiado' : 'Erro';
+      btn.classList.toggle('ok', ok);
+      setTimeout(function(){ btn.textContent = 'Copiar'; btn.classList.remove('ok'); }, 1400);
+    }
+    function fallback(){
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta); done(ok);
+      } catch(e){ done(false); }
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function(){ done(true); }, fallback);
+      } else { fallback(); }
+    } catch(e){ fallback(); }
+  }
+
+  // Busca
+  var q = document.getElementById('q');
+  var items = Array.prototype.slice.call(document.querySelectorAll('.cmd, details.problem, .concept, .tw tr:not(:first-child)'));
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+  var empty = document.getElementById('noresult');
+  function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  var cache = items.map(function(el){ return norm(el.textContent); });
+
+  function run(){
+    var term = norm(q.value.trim());
+    var any = false;
+    items.forEach(function(el, i){
+      var match = !term || cache[i].indexOf(term) > -1;
+      el.hidden = !match;
+      if (el.tagName === 'DETAILS') { el.open = !!term && match; }
+    });
+    sections.forEach(function(sec){
+      var vis = sec.querySelectorAll('.cmd:not([hidden]), details.problem:not([hidden]), .concept:not([hidden]), .tw tr:not(:first-child):not([hidden])').length;
+      sec.hidden = !!term && vis === 0;
+      if (!sec.hidden && (!term || vis)) any = true;
+      // esconde tabelas sem linhas visíveis
+      sec.querySelectorAll('.tw').forEach(function(tw){
+        tw.hidden = !!term && tw.querySelectorAll('tr:not(:first-child):not([hidden])').length === 0;
+      });
+    });
+    empty.hidden = true;
+    if (term && !any) {
+      var prob = document.getElementById('problemas');
+      prob.hidden = false; empty.hidden = false;
+      prob.querySelectorAll('h3, .lead').forEach(function(e){ e.hidden = true; });
+    } else {
+      document.querySelectorAll('#problemas h3, #problemas .lead').forEach(function(e){ e.hidden = false; });
+    }
+  }
+  q.addEventListener('input', run);
+
+  // Destaque da seção atual no menu
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) {
+          links.forEach(function(a){ a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id); });
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>
