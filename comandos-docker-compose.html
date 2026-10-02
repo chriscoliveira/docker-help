@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Docker Compose Properties — Guia JS</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0d14;
+        --surface: #111520;
+        --surface2: #161c2e;
+        --border: #1e2a45;
+        --accent: #00e5ff;
+        --accent2: #7c3aed;
+        --accent3: #f59e0b;
+        --text: #e2e8f0;
+        --text-muted: #64748b;
+        --text-dim: #94a3b8;
+        --green: #10b981;
+        --red: #f43f5e;
+        --star: #fbbf24;
+        --mono: "JetBrains Mono", monospace;
+        --sans: "Syne", sans-serif;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        top: -20%;
+        left: -10%;
+        width: 60%;
+        height: 60%;
+        background: radial-gradient(ellipse, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      header {
+        position: relative;
+        z-index: 10;
+        padding: 60px 40px 32px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .header-tag {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        color: var(--accent);
+        text-transform: uppercase;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .header-tag::before {
+        content: "";
+        width: 24px;
+        height: 1px;
+        background: var(--accent);
+      }
+
+      h1 {
+        font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -2px;
+        background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 12px;
+      }
+
+      .subtitle {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.6;
+        max-width: 560px;
+      }
+
+      .stats-bar {
+        display: flex;
+        gap: 32px;
+        margin-top: 28px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
+
+      .stat { display: flex; flex-direction: column; gap: 4px; }
+      .stat-num { font-size: 26px; font-weight: 800; color: var(--accent); letter-spacing: -1px; }
+      .stat-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+      .legend {
+        position: relative;
+        z-index: 10;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 40px 28px;
+      }
+
+      .legend-box {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 20px;
+      }
+
+      .legend-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); flex-shrink: 0; }
+      .legend-divider { width: 1px; height: 26px; background: var(--border); flex-shrink: 0; }
+      .legend-item { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+      .legend-icon { font-size: 16px; line-height: 1; }
+
+      .controls {
+        position: relative;
+        z-index: 10;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 40px 36px;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .search-wrap { position: relative; flex: 1; min-width: 220px; }
+      .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+
+      #search {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 16px 12px 42px;
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--text);
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      #search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.08); }
+      #search::placeholder { color: var(--text-muted); }
+
+      .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+
+      .filter-btn {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+      .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #000; }
+
+      .grid {
+        position: relative;
+        z-index: 10;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 40px 80px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+        cursor: pointer;
+        animation: fadeUp 0.4s ease both;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+        border-color: var(--accent);
+        box-shadow: 0 8px 32px rgba(0, 229, 255, 0.08), 0 0 0 1px rgba(0, 229, 255, 0.15);
+      }
+      .card.popular { border-color: rgba(251, 191, 36, 0.18); }
+      .card.popular:hover {
+        border-color: var(--star);
+        box-shadow: 0 8px 32px rgba(251, 191, 36, 0.09), 0 0 0 1px rgba(251, 191, 36, 0.2);
+      }
+      .card.hidden { display: none; }
+
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface2);
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .freq-badge { font-size: 17px; line-height: 1; flex-shrink: 0; width: 24px; text-align: center; }
+
+      .cmd-badge {
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        padding: 5px 12px;
+        border-radius: 6px;
+        min-width: 110px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .cmd-badge.cat-servico { background: rgba(16, 185, 129, 0.1); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.25); }
+      .cmd-badge.cat-imagem  { background: rgba(0, 229, 255, 0.1); color: var(--accent); border: 1px solid rgba(0, 229, 255, 0.25); }
+      .cmd-badge.cat-rede    { background: rgba(244, 63, 94, 0.1); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.25); }
+      .cmd-badge.cat-volume  { background: rgba(245, 158, 11, 0.1); color: var(--accent3); border: 1px solid rgba(245, 158, 11, 0.25); }
+      .cmd-badge.cat-config  { background: rgba(124, 58, 237, 0.1); color: #a78bfa; border: 1px solid rgba(124, 58, 237, 0.25); }
+
+      .cmd-title { flex: 1; min-width: 0; }
+      .cmd-title h3 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+      .cmd-title p  { font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+
+      .expand-icon { color: var(--text-muted); transition: transform 0.25s; flex-shrink: 0; }
+      .card.open .expand-icon { transform: rotate(180deg); }
+
+      .card-body { display: none; padding: 20px; border-top: 1px solid var(--border); }
+      .card.open .card-body { display: block; }
+
+      .section { margin-bottom: 18px; }
+      .section:last-child { margin-bottom: 0; }
+
+      .section-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+      .description { font-size: 13.5px; line-height: 1.78; color: var(--text-dim); }
+      .description strong { color: var(--text); font-weight: 600; }
+      .description code { font-family: var(--mono); font-size: 12px; background: rgba(0, 229, 255, 0.08); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+      .description em { color: var(--text); font-style: italic; }
+
+      .code-block { background: #080b12; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 8px; }
+      .code-block-header { display: flex; align-items: center; justify-content: space-between; padding: 7px 14px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+      .code-lang { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+      .copy-btn { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 2px 8px; border-radius: 4px; transition: color 0.15s, background 0.15s; }
+      .copy-btn:hover { color: var(--accent); background: rgba(0, 229, 255, 0.06); }
+      .copy-btn.copied { color: var(--green) !important; }
+
+      .code-block pre { padding: 14px 16px; font-family: var(--mono); font-size: 12px; line-height: 1.9; overflow-x: auto; color: #c9d1d9; }
+      .code-block pre .kw  { color: var(--accent); font-weight: 600; }
+      .code-block pre .str { color: #a5d6ff; }
+      .code-block pre .cmt { color: #484f58; font-style: italic; }
+      .code-block pre .num { color: var(--accent3); }
+      .code-block pre .var { color: #ffa657; }
+      .code-block pre .flag{ color: var(--green); }
+      .code-block pre .path{ color: #d2a8ff; }
+
+      .tips { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+      .tip { display: flex; gap: 10px; padding: 10px 14px; border-radius: 7px; font-size: 12.5px; line-height: 1.55; color: var(--text-dim); }
+      .tip.tip-info { background: rgba(0, 229, 255, 0.05); border-left: 3px solid rgba(0, 229, 255, 0.4); }
+      .tip.tip-warn { background: rgba(245, 158, 11, 0.05); border-left: 3px solid rgba(245, 158, 11, 0.4); }
+      .tip.tip-good { background: rgba(16, 185, 129, 0.05); border-left: 3px solid rgba(16, 185, 129, 0.4); }
+      .tip.tip-bad  { background: rgba(244, 63, 94, 0.05); border-left: 3px solid rgba(244, 63, 94, 0.4); }
+      .tip code { font-family: var(--mono); font-size: 11px; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px; }
+      .tip-icon { flex-shrink: 0; }
+
+      .no-results { display: none; grid-column: 1/-1; text-align: center; padding: 60px 0; color: var(--text-muted); font-family: var(--mono); font-size: 13px; }
+
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: var(--bg); }
+      ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+      @media (max-width: 680px) {
+        header, .legend, .controls, .grid { padding-left: 16px; padding-right: 16px; }
+        .grid { grid-template-columns: 1fr; }
+        h1 { font-size: 2rem; letter-spacing: -1px; }
+        .stats-bar { gap: 18px; }
+        .legend-divider { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-tag">Guia Fullstack JS</div>
+      <h1>Docker Compose<br />Properties</h1>
+      <p class="subtitle">
+        // Referência completa das propriedades do docker-compose.yml — o que cada
+        uma faz, quando usar e como ficam no serviço do pgAdmin.
+      </p>
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-num" id="total-count">0</span>
+          <span class="stat-label">Propriedades</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" id="visible-count">0</span>
+          <span class="stat-label">Visíveis</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">5</span>
+          <span class="stat-label">Categorias</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="legend">
+      <div class="legend-box">
+        <span class="legend-title">Frequência</span>
+        <div class="legend-divider"></div>
+        <div class="legend-item"><span class="legend-icon">⭐</span><span>Uso diário — estará em quase todo compose</span></div>
+        <div class="legend-divider"></div>
+        <div class="legend-item"><span class="legend-icon">🔧</span><span>Moderado — aparece em projetos maiores ou produção</span></div>
+        <div class="legend-divider"></div>
+        <div class="legend-item"><span class="legend-icon">💤</span><span>Raro — situações específicas, bom saber que existe</span></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="search-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+        </svg>
+        <input type="text" id="search" placeholder="Buscar propriedade..." autocomplete="off" />
+      </div>
+      <div class="filters">
+        <button class="filter-btn active" data-cat="all">Todos</button>
+        <button class="filter-btn" data-cat="servico">Serviço</button>
+        <button class="filter-btn" data-cat="imagem">Imagem</button>
+        <button class="filter-btn" data-cat="rede">Rede</button>
+        <button class="filter-btn" data-cat="volume">Volume</button>
+        <button class="filter-btn" data-cat="config">Config</button>
+      </div>
+    </div>
+
+    <div class="grid" id="grid">
+      <div class="no-results" id="no-results">
+        Nenhuma propriedade encontrada para "<span id="search-term"></span>"
+      </div>
+    </div>
+
+    <script>
+      const props = [
+        {
+          cmd: "services",
+          cat: "servico",
+          freq: "star",
+          short: "Raiz que agrupa todos os containers da aplicação.",
+          desc: `<strong>services</strong> é o bloco principal do arquivo — tudo que você quer rodar fica dentro dele. Cada chave dentro de <code>services</code> é o nome de um container. No exemplo da aula, temos dois serviços: <code>db</code> (PostgreSQL) e <code>pgadmin</code>.<br><br>O nome que você coloca aqui é também o <em>hostname</em> que os outros containers usam para se comunicar na rede interna do Docker. É por isso que no pgAdmin você digita <code>db</code> no campo Servidor — não <code>localhost</code>.`,
+          syntax: [
+            `<span class="kw">services</span>:`,
+            `  <span class="var">db</span>:`,
+            `    image: postgres:alpine`,
+            ``,
+            `  <span class="var">pgadmin</span>:`,
+            `    image: dpage/pgadmin4`,
+          ],
+          tips: [
+            { type: "info", icon: "ℹ️", text: "O nome do serviço (ex: <code>db</code>) vira o hostname na rede interna. Use nomes curtos e descritivos." },
+            { type: "good", icon: "✅", text: "Você pode ter quantos serviços quiser: app, banco, cache, fila, proxy — cada um é um bloco dentro de <code>services</code>." },
+          ],
+        },
+        {
+          cmd: "image",
+          cat: "imagem",
+          freq: "star",
+          short: "Define qual imagem Docker será usada para criar o container.",
+          desc: `<strong>image</strong> diz ao Docker qual imagem baixar do Docker Hub (ou de outro registry) para criar o container. O formato é <code>nome:tag</code>. Se você não colocar a tag, o Docker assume <code>latest</code> — o que pode mudar silenciosamente entre execuções.<br><br>Para o banco usamos <code>postgres:alpine</code> (versão leve do PostgreSQL). Para o pgAdmin usamos <code>dpage/pgadmin4</code> — a imagem oficial mantida pela empresa DevPG.`,
+          syntax: [
+            `<span class="cmt"># Imagem oficial do PostgreSQL — versão Alpine (leve)</span>`,
+            `<span class="kw">image</span>: postgres:alpine`,
+            ``,
+            `<span class="cmt"># Imagem oficial do pgAdmin 4</span>`,
+            `<span class="kw">image</span>: dpage/pgadmin4`,
+            ``,
+            `<span class="cmt"># Com versão fixada — recomendado em produção</span>`,
+            `<span class="kw">image</span>: postgres:<span class="num">16</span>-alpine`,
+          ],
+          tips: [
+            { type: "warn", icon: "⚠️", text: "Evite <code>:latest</code> em produção — a versão pode mudar e quebrar sua aplicação. Fixe a versão: <code>postgres:16-alpine</code>." },
+            { type: "info", icon: "ℹ️", text: "Imagens com sufixo <code>-alpine</code> são versões menores baseadas em Alpine Linux. Sobem mais rápido e ocupam menos espaço em disco." },
+          ],
+        },
+        {
+          cmd: "container_name",
+          cat: "servico",
+          freq: "tool",
+          short: "Define um nome fixo para o container ao invés do nome gerado automaticamente.",
+          desc: `Por padrão, o Docker Compose gera nomes de container combinando o nome da pasta, o serviço e um número — algo como <code>meu-projeto-pgadmin-1</code>. Com <strong>container_name</strong> você força um nome fixo e previsível.<br><br>Isso facilita usar comandos diretos como <code>docker logs pgadmin</code> ou <code>docker exec -it pgadmin bash</code> sem precisar descobrir o nome gerado.`,
+          syntax: [
+            `<span class="kw">services</span>:`,
+            `  <span class="var">pgadmin</span>:`,
+            `    <span class="kw">container_name</span>: <span class="str">pgadmin</span>`,
+            `    image: dpage/pgadmin4`,
+            ``,
+            `<span class="cmt"># Agora você pode usar:</span>`,
+            `<span class="cmt"># docker logs pgadmin</span>`,
+            `<span class="cmt"># docker exec -it pgadmin sh</span>`,
+          ],
+          tips: [
+            { type: "warn", icon: "⚠️", text: "Nomes fixos impedem escalar o serviço com <code>docker compose up --scale pgadmin=3</code> — dois containers não podem ter o mesmo nome." },
+            { type: "good", icon: "✅", text: "Ótimo para desenvolvimento e aula — facilita muito os comandos no terminal sem ter que copiar o nome gerado." },
+          ],
+        },
+        {
+          cmd: "environment",
+          cat: "config",
+          freq: "star",
+          short: "Injeta variáveis de ambiente dentro do container.",
+          desc: `<strong>environment</strong> passa configurações para o container como variáveis de ambiente. É assim que você configura usuário, senha e banco sem precisar modificar a imagem. As imagens oficiais do PostgreSQL e do pgAdmin leem variáveis específicas na inicialização.<br><br>Aceita dois formatos: <em>mapping</em> (<code>CHAVE: valor</code>) ou <em>lista</em> (<code>- CHAVE=valor</code>). Ambos funcionam — a diferença é só sintaxe YAML.`,
+          syntax: [
+            `<span class="cmt"># Formato mapping (chave: valor) — mais legível</span>`,
+            `<span class="kw">environment</span>:`,
+            `  <span class="var">POSTGRES_USER</span>: aluno`,
+            `  <span class="var">POSTGRES_PASSWORD</span>: senha123`,
+            `  <span class="var">POSTGRES_DB</span>: aula`,
+            ``,
+            `<span class="cmt"># Formato lista — também válido</span>`,
+            `<span class="kw">environment</span>:`,
+            `  - <span class="str">POSTGRES_USER=aluno</span>`,
+            `  - <span class="str">POSTGRES_PASSWORD=senha123</span>`,
+          ],
+          tips: [
+            { type: "bad", icon: "❌", text: "Nunca suba senhas reais no Git via <code>environment</code>. Para produção, use <code>env_file</code> apontando para um <code>.env</code> no <code>.gitignore</code>." },
+            { type: "info", icon: "ℹ️", text: "Cada imagem tem suas próprias variáveis. Consulte a documentação da imagem no Docker Hub para saber quais são aceitas." },
+          ],
+        },
+        {
+          cmd: "env_file",
+          cat: "config",
+          freq: "tool",
+          short: "Carrega variáveis de ambiente de um arquivo externo (.env).",
+          desc: `<strong>env_file</strong> é a alternativa segura ao <code>environment</code> para quando você não quer expor senhas diretamente no <code>docker-compose.yml</code>. Você cria um arquivo <code>.env</code>, coloca ele no <code>.gitignore</code> e referencia aqui.<br><br>É a prática recomendada para qualquer projeto que vai ser versionado — o arquivo Compose fica no repositório, as senhas ficam só na sua máquina (ou nas variáveis de CI/CD).`,
+          syntax: [
+            `<span class="cmt"># No docker-compose.yml:</span>`,
+            `<span class="kw">services</span>:`,
+            `  <span class="var">db</span>:`,
+            `    image: postgres:alpine`,
+            `    <span class="kw">env_file</span>:`,
+            `      - <span class="str">.env</span>`,
+            ``,
+            `<span class="cmt"># No arquivo .env (não vai pro Git!):</span>`,
+            `<span class="var">POSTGRES_USER</span>=aluno`,
+            `<span class="var">POSTGRES_PASSWORD</span>=senha_secreta`,
+            `<span class="var">POSTGRES_DB</span>=aula`,
+          ],
+          tips: [
+            { type: "good", icon: "✅", text: "Adicione <code>.env</code> no <code>.gitignore</code>. Crie um <code>.env.example</code> com as chaves mas sem os valores para documentar o que é necessário." },
+            { type: "info", icon: "ℹ️", text: "O Docker Compose também lê automaticamente um <code>.env</code> na raiz do projeto para substituição de variáveis no próprio YAML." },
+          ],
+        },
+        {
+          cmd: "ports",
+          cat: "rede",
+          freq: "star",
+          short: "Mapeia portas do container para a máquina host (sua máquina).",
+          desc: `<strong>ports</strong> cria uma ponte entre sua máquina e o container. O formato é <code>"PORTA_HOST:PORTA_CONTAINER"</code>. Sem isso, o container existe mas é inacessível pelo navegador ou por ferramentas externas.<br><br>No exemplo do pgAdmin, mapeamos <code>8080:80</code> — o pgAdmin roda na porta 80 internamente, mas você acessa em <code>localhost:8080</code>. Para o PostgreSQL, <code>5432:5432</code> expõe a mesma porta.`,
+          syntax: [
+            `<span class="cmt"># HOST:CONTAINER</span>`,
+            `<span class="kw">ports</span>:`,
+            `  - <span class="str">"8080:80"</span>    <span class="cmt"># acesse em localhost:8080</span>`,
+            ``,
+            `<span class="cmt"># PostgreSQL na mesma porta</span>`,
+            `<span class="kw">ports</span>:`,
+            `  - <span class="str">"5432:5432"</span>`,
+            ``,
+            `<span class="cmt"># Evitar conflito: porta diferente no host</span>`,
+            `<span class="kw">ports</span>:`,
+            `  - <span class="str">"5433:5432"</span>  <span class="cmt"># útil se já tiver Postgres local</span>`,
+          ],
+          tips: [
+            { type: "info", icon: "ℹ️", text: "Serviços que se comunicam entre si <em>dentro</em> do Docker não precisam de <code>ports</code> — eles usam o nome do serviço como hostname diretamente." },
+            { type: "warn", icon: "⚠️", text: "Se a porta do host já estiver em uso, o <code>docker compose up</code> vai falhar. Mude a porta do host (parte esquerda) para um valor livre." },
+          ],
+        },
+        {
+          cmd: "depends_on",
+          cat: "servico",
+          freq: "star",
+          short: "Define a ordem de inicialização — este serviço só sobe depois dos listados.",
+          desc: `<strong>depends_on</strong> garante que o Docker Compose suba os serviços na ordem correta. No exemplo da aula, o <code>pgadmin</code> depende do <code>db</code> — faz sentido o banco existir antes da interface gráfica.<br><br><strong>Atenção importante:</strong> <code>depends_on</code> garante a <em>ordem de início</em>, não que o serviço está <em>pronto</em>. O PostgreSQL pode demorar alguns segundos para aceitar conexões mesmo depois de subir. Para esperar o banco estar de fato pronto, use <code>healthcheck</code> em conjunto.`,
+          syntax: [
+            `<span class="kw">services</span>:`,
+            `  <span class="var">pgadmin</span>:`,
+            `    image: dpage/pgadmin4`,
+            `    <span class="kw">depends_on</span>:`,
+            `      - <span class="str">db</span>     <span class="cmt"># db sobe antes do pgadmin</span>`,
+            ``,
+            `  <span class="var">db</span>:`,
+            `    image: postgres:alpine`,
+          ],
+          tips: [
+            { type: "warn", icon: "⚠️", text: "<code>depends_on</code> não espera o banco estar <em>aceitando conexões</em> — só espera o container iniciar. Para isso, combine com <code>healthcheck</code>." },
+            { type: "good", icon: "✅", text: "Ponto didático da aula: pare o <code>db</code> com <code>docker compose stop db</code> e veja o pgAdmin perder a conexão — a dependência em ação!" },
+          ],
+        },
+        {
+          cmd: "volumes",
+          cat: "volume",
+          freq: "tool",
+          short: "Monta pastas ou volumes para persistir dados fora do container.",
+          desc: `Por padrão, tudo que existe dentro de um container <strong>some quando ele é removido</strong>. <strong>volumes</strong> resolve isso — mapeia uma pasta do container para sua máquina (ou para um volume gerenciado pelo Docker), persistindo os dados entre reinicializações.<br><br>Para bancos de dados, isso é essencial em produção. Em desenvolvimento pode ser opcional se você não se importar em recriar os dados.`,
+          syntax: [
+            `<span class="cmt"># Volume nomeado (gerenciado pelo Docker)</span>`,
+            `<span class="kw">services</span>:`,
+            `  <span class="var">db</span>:`,
+            `    image: postgres:alpine`,
+            `    <span class="kw">volumes</span>:`,
+            `      - <span class="str">pg_data:/var/lib/postgresql/data</span>`,
+            ``,
+            `<span class="cmt"># Declarar o volume no nível raiz</span>`,
+            `<span class="kw">volumes</span>:`,
+            `  <span class="var">pg_data</span>:`,
+            ``,
+            `<span class="cmt"># Bind mount: pasta da sua máquina</span>`,
+            `    <span class="kw">volumes</span>:`,
+            `      - <span class="str">./dados:/var/lib/postgresql/data</span>`,
+          ],
+          tips: [
+            { type: "info", icon: "ℹ️", text: "Volumes nomeados (ex: <code>pg_data</code>) são gerenciados pelo Docker e ficam em um local seguro do sistema. Bind mounts (<code>./pasta</code>) mapeiam diretórios específicos da sua máquina." },
+            { type: "good", icon: "✅", text: "Para desenvolvimento, volumes nomeados são a escolha mais simples. Para ver os arquivos diretamente, use bind mounts." },
+          ],
+        },
+        {
+          cmd: "networks",
+          cat: "rede",
+          freq: "tool",
+          short: "Controla em quais redes o serviço participa.",
+          desc: `O Docker Compose cria automaticamente uma <strong>rede padrão</strong> para todos os serviços do arquivo — por isso o pgAdmin consegue se conectar ao <code>db</code> pelo nome sem configuração extra.<br><br><strong>networks</strong> é útil quando você quer isolar serviços, criar múltiplas redes, ou conectar serviços de arquivos Compose diferentes. Para a aula inicial, você não precisa configurar — a rede padrão já funciona.`,
+          syntax: [
+            `<span class="cmt"># Rede padrão — automática, sem configuração</span>`,
+            `<span class="cmt"># (todos os serviços já se enxergam)</span>`,
+            ``,
+            `<span class="cmt"># Redes customizadas — isolamento</span>`,
+            `<span class="kw">services</span>:`,
+            `  <span class="var">db</span>:`,
+            `    <span class="kw">networks</span>: [backend]`,
+            `  <span class="var">pgadmin</span>:`,
+            `    <span class="kw">networks</span>: [backend, frontend]`,
+            ``,
+            `<span class="kw">networks</span>:`,
+            `  <span class="var">backend</span>:`,
+            `  <span class="var">frontend</span>:`,
+          ],
+          tips: [
+            { type: "info", icon: "ℹ️", text: "Sem configurar <code>networks</code>, todos os serviços entram na rede padrão chamada <code>nome-da-pasta_default</code> e se comunicam pelo nome do serviço." },
+            { type: "good", icon: "✅", text: "Use redes customizadas em projetos maiores para isolar, por exemplo, o banco do frontend — o banco só fica acessível para o backend." },
+          ],
+        },
+        {
+          cmd: "restart",
+          cat: "config",
+          freq: "tool",
+          short: "Define a política de reinício automático do container.",
+          desc: `<strong>restart</strong> controla o que acontece quando um container para — seja por erro ou pela máquina reiniciando. É essencial para deixar serviços sempre disponíveis em produção.<br><br>As opções são: <code>no</code> (padrão — não reinicia), <code>always</code> (sempre reinicia), <code>on-failure</code> (só reinicia se der erro), <code>unless-stopped</code> (reinicia sempre, exceto se você parou manualmente).`,
+          syntax: [
+            `<span class="cmt"># Reinicia sempre (bom para produção)</span>`,
+            `<span class="kw">restart</span>: always`,
+            ``,
+            `<span class="cmt"># Reinicia só em caso de erro</span>`,
+            `<span class="kw">restart</span>: on-failure`,
+            ``,
+            `<span class="cmt"># Reinicia sempre, exceto se parado manualmente</span>`,
+            `<span class="kw">restart</span>: unless-stopped`,
+            ``,
+            `<span class="cmt"># Padrão — não reinicia</span>`,
+            `<span class="kw">restart</span>: no`,
+          ],
+          tips: [
+            { type: "good", icon: "✅", text: "Para produção, <code>unless-stopped</code> é a melhor escolha — o banco volta depois de reiniciar o servidor, mas respeita um <code>docker compose stop</code> manual." },
+            { type: "info", icon: "ℹ️", text: "Em desenvolvimento, <code>no</code> (padrão) é mais seguro — você não quer que um container travado fique tentando reiniciar em loop." },
+          ],
+        },
+        {
+          cmd: "healthcheck",
+          cat: "config",
+          freq: "tool",
+          short: "Verifica se o serviço está realmente pronto para receber conexões.",
+          desc: `<strong>healthcheck</strong> vai além do <code>depends_on</code> — ele verifica se o container está não só <em>rodando</em>, mas <em>funcionando</em>. O Docker executa o comando periodicamente e marca o container como <code>healthy</code> ou <code>unhealthy</code>.<br><br>Combinado com <code>depends_on: condition: service_healthy</code>, você garante que a aplicação só sobe depois que o banco está de fato aceitando conexões.`,
+          syntax: [
+            `<span class="kw">services</span>:`,
+            `  <span class="var">db</span>:`,
+            `    image: postgres:alpine`,
+            `    <span class="kw">healthcheck</span>:`,
+            `      <span class="var">test</span>: [<span class="str">"CMD-SHELL"</span>, <span class="str">"pg_isready -U aluno"</span>]`,
+            `      <span class="var">interval</span>: <span class="num">5s</span>`,
+            `      <span class="var">timeout</span>: <span class="num">5s</span>`,
+            `      <span class="var">retries</span>: <span class="num">5</span>`,
+            ``,
+            `  <span class="var">pgadmin</span>:`,
+            `    <span class="kw">depends_on</span>:`,
+            `      <span class="var">db</span>:`,
+            `        <span class="var">condition</span>: service_healthy`,
+          ],
+          tips: [
+            { type: "good", icon: "✅", text: "Para PostgreSQL, <code>pg_isready</code> é o comando ideal — já vem na imagem e verifica se o banco está aceitando conexões." },
+            { type: "info", icon: "ℹ️", text: "<code>interval</code> = quanto tempo entre cada verificação. <code>retries</code> = quantas falhas antes de marcar como unhealthy. Ajuste conforme a velocidade do seu banco subir." },
+          ],
+        },
+        {
+          cmd: "build",
+          cat: "imagem",
+          freq: "tool",
+          short: "Constrói a imagem a partir de um Dockerfile local ao invés de baixar do Hub.",
+          desc: `<strong>build</strong> é usado quando você tem seu próprio <code>Dockerfile</code> — o caso da sua aplicação Node.js, por exemplo. Em vez de usar uma imagem pronta do Docker Hub, o Compose constrói a imagem localmente antes de subir o container.<br><br>Você pode usar só o caminho (o Docker procura o Dockerfile lá) ou especificar contexto e arquivo separadamente.`,
+          syntax: [
+            `<span class="cmt"># Forma simples — Dockerfile na mesma pasta</span>`,
+            `<span class="kw">services</span>:`,
+            `  <span class="var">app</span>:`,
+            `    <span class="kw">build</span>: .`,
+            `    <span class="kw">ports</span>:`,
+            `      - <span class="str">"3000:3000"</span>`,
+            ``,
+            `<span class="cmt"># Forma completa — contexto e arquivo separados</span>`,
+            `  <span class="var">app</span>:`,
+            `    <span class="kw">build</span>:`,
+            `      <span class="var">context</span>: <span class="path">./app</span>`,
+            `      <span class="var">dockerfile</span>: <span class="path">Dockerfile.dev</span>`,
+          ],
+          tips: [
+            { type: "info", icon: "ℹ️", text: "Use <code>docker compose build</code> para reconstruir as imagens sem subir os containers, ou <code>docker compose up --build</code> para reconstruir e subir de uma vez." },
+            { type: "good", icon: "✅", text: "Misturar <code>build</code> (sua app) com <code>image</code> (serviços prontos como postgres, redis) no mesmo Compose é o padrão mais comum em projetos reais." },
+          ],
+        },
+      ];
+
+      const freqIcon  = { star: "⭐", tool: "🔧", rare: "💤" };
+      const freqLabel = { star: "Uso diário", tool: "Moderado", rare: "Raro" };
+      const catLabel  = { servico: "Serviço", imagem: "Imagem", rede: "Rede", volume: "Volume", config: "Config" };
+
+      const grid       = document.getElementById("grid");
+      const noResults  = document.getElementById("no-results");
+      const visCount   = document.getElementById("visible-count");
+      const totalCount = document.getElementById("total-count");
+
+      totalCount.textContent = props.length;
+
+      function createCard(prop, index) {
+        const card = document.createElement("div");
+        card.className = "card" + (prop.freq === "star" ? " popular" : "");
+        card.dataset.cat = prop.cat;
+        card.dataset.cmd = prop.cmd.toLowerCase();
+        card.style.animationDelay = `${index * 0.04}s`;
+
+        const tipsHtml = prop.tips
+          .map(t => `<div class="tip tip-${t.type}"><span class="tip-icon">${t.icon}</span><span>${t.text}</span></div>`)
+          .join("");
+
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="freq-badge" title="${freqLabel[prop.freq]}">${freqIcon[prop.freq]}</span>
+            <span class="cmd-badge cat-${prop.cat}">${prop.cmd}</span>
+            <div class="cmd-title">
+              <h3>${prop.short}</h3>
+              <p>${catLabel[prop.cat]} &middot; ${freqLabel[prop.freq]}</p>
+            </div>
+            <svg class="expand-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="section">
+              <div class="section-label">O que faz</div>
+              <p class="description">${prop.desc}</p>
+            </div>
+            <div class="section">
+              <div class="section-label">Exemplo no docker-compose.yml</div>
+              <div class="code-block">
+                <div class="code-block-header">
+                  <span class="code-lang">docker-compose.yml</span>
+                  <button class="copy-btn">Copiar</button>
+                </div>
+                <pre>${prop.syntax.join("\n")}</pre>
+              </div>
+            </div>
+            ${prop.tips.length ? `<div class="section"><div class="section-label">Dicas & Boas Práticas</div><div class="tips">${tipsHtml}</div></div>` : ""}
+          </div>
+        `;
+
+        card.querySelector(".card-header").addEventListener("click", () => card.classList.toggle("open"));
+
+        card.querySelector(".copy-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(card.querySelector("pre").innerText).catch(() => {});
+          const btn = e.currentTarget;
+          btn.textContent = "Copiado!";
+          btn.classList.add("copied");
+          setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("copied"); }, 2000);
+        });
+
+        return card;
+      }
+
+      props.forEach((p, i) => grid.insertBefore(createCard(p, i), noResults));
+
+      let activeFilter = "all";
+
+      function updateVisible() {
+        const q = document.getElementById("search").value.toLowerCase().trim();
+        let visible = 0;
+        grid.querySelectorAll(".card").forEach(card => {
+          const matchCat = activeFilter === "all" || card.dataset.cat === activeFilter;
+          const matchQ   = !q || card.dataset.cmd.includes(q)
+            || card.querySelector("h3").textContent.toLowerCase().includes(q)
+            || card.querySelector(".description").textContent.toLowerCase().includes(q);
+          const show = matchCat && matchQ;
+          card.classList.toggle("hidden", !show);
+          if (show) visible++;
+        });
+        visCount.textContent = visible;
+        noResults.style.display = visible === 0 ? "block" : "none";
+        document.getElementById("search-term").textContent = q;
+      }
+
+      visCount.textContent = props.length;
+
+      document.querySelectorAll(".filter-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          activeFilter = btn.dataset.cat;
+          updateVisible();
+        });
+      });
+
+      document.getElementById("search").addEventListener("input", updateVisible);
+    </script>
+  </body>
+</html>
